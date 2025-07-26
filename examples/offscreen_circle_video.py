@@ -4,7 +4,7 @@ import imageio.v3 as iio
 import numpy as np
 from rendercanvas.offscreen import RenderCanvas
 
-from animanode.cube import setup_drawing_sync
+from animanode.circle import setup_drawing_sync
 
 
 def create_video(
@@ -69,5 +69,5 @@ def create_video(
 
 
 if __name__ == "__main__":
-    # Create HD video with perfect cube proportions
-    create_video("cube.mp4", width=1280, height=960, fps=60, duration=5.0, quality=9)
+    # Create HD video with circle
+    create_video("circle.mp4", width=1280, height=960, fps=60, duration=5.0, quality=9)
