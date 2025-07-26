@@ -4,11 +4,7 @@ import imageio.v3 as iio
 import numpy as np
 from rendercanvas.offscreen import RenderCanvas
 
-
-try:
-    from .cube import setup_drawing_sync
-except ImportError:
-    from cube import setup_drawing_sync
+from animanode.cube import setup_drawing_sync
 
 
 def create_video(

@@ -5,9 +5,6 @@ import wgpu
 from rendercanvas.auto import RenderCanvas, loop
 
 
-# %% Entrypoints (sync and async)
-
-
 def setup_drawing_sync(canvas, power_preference="high-performance", limits=None):
     """Setup to draw a rotating cube on the given canvas.
 

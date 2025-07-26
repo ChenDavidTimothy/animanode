@@ -61,7 +61,7 @@
             "label": "MyPy: Type Check",
             "type": "shell",
             "command": "python",
-            "args": ["-m", "mypy", "--exclude", "build", "maptor"],
+            "args": ["-m", "mypy", "--exclude", "build", "animanode"],
             "group": "build",
             "presentation": {
                 "echo": true,
