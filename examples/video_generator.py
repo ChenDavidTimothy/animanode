@@ -1,13 +1,18 @@
+"""
+Modular video generator for all AnimaNode geometries
+"""
+
 from pathlib import Path
 
 import imageio.v3 as iio
 import numpy as np
 from rendercanvas.offscreen import RenderCanvas
 
-from animanode.circle import setup_drawing_sync
+from animanode import Circle, Rectangle, Renderer, Triangle
 
 
 def create_video(
+    geometry_class,
     output_path: str,
     width: int = 1280,
     height: int = 960,
@@ -15,6 +20,8 @@ def create_video(
     duration: float = 5.0,
     quality: int = 9,
 ) -> str:
+    """Create video for any geometry class"""
+
     # Validate FFmpeg backend
     try:
         test_frame = [np.zeros((16, 16, 3), dtype=np.uint8)]
@@ -28,9 +35,9 @@ def create_video(
     # Setup rendering
     total_frames = int(fps * duration)
     canvas = RenderCanvas(size=(width, height))
-    draw_frame = setup_drawing_sync(canvas)
+    draw_frame = Renderer.setup_drawing_sync(canvas, geometry_class)
 
-    print(f"Rendering {total_frames} frames at {width}x{height}...")
+    print(f"Rendering {total_frames} frames of {geometry_class.__name__} at {width}x{height}...")
 
     # Render frames
     frames = []
@@ -68,6 +75,25 @@ def create_video(
     return output_path
 
 
+def main():
+    """Generate videos for all geometries"""
+    geometries = [
+        (Triangle, "triangle.mp4"),
+        (Circle, "circle.mp4"),
+        (Rectangle, "rectangle.mp4"),
+    ]
+
+    for geometry_class, filename in geometries:
+        create_video(
+            geometry_class=geometry_class,
+            output_path=filename,
+            width=1280,
+            height=960,
+            fps=60,
+            duration=5.0,
+            quality=9,
+        )
+
+
 if __name__ == "__main__":
-    # Create HD video with circle
-    create_video("circle.mp4", width=1280, height=960, fps=60, duration=5.0, quality=9)
+    main()
