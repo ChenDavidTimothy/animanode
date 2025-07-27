@@ -44,28 +44,15 @@ class Renderer:
         adapter = wgpu.gpu.request_adapter_sync(power_preference=power_preference)
         device = adapter.request_device_sync(required_limits=limits)
 
-        # Create separate uniform buffers - FIXED: No offset alignment issues
+        # Create and populate uniform buffer for geometry parameters
         uniform_data = geometry.get_uniform_data()
-
-        # Split the data: first 16 bytes = geometry, rest = transform
-        geometry_data = uniform_data[:16]
-        transform_data = uniform_data[16:]
-
-        # Create separate buffers for geometry and transform
-        geometry_buffer = device.create_buffer(
-            size=16,
+        uniform_buffer = device.create_buffer(
+            size=geometry.get_uniform_size(),
             usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
         )
-        transform_buffer = device.create_buffer(
-            size=48,
-            usage=wgpu.BufferUsage.UNIFORM | wgpu.BufferUsage.COPY_DST,
-        )
+        device.queue.write_buffer(uniform_buffer, 0, uniform_data)
 
-        # Upload data to separate buffers
-        device.queue.write_buffer(geometry_buffer, 0, geometry_data)
-        device.queue.write_buffer(transform_buffer, 0, transform_data)
-
-        # Create bind group layout for uniforms - FIXED: Two separate buffers
+        # Create bind group layout for uniforms - following three's Material pattern
         bind_group_layout = device.create_bind_group_layout(
             entries=[
                 {
@@ -74,41 +61,24 @@ class Renderer:
                     "buffer": {
                         "type": wgpu.BufferBindingType.uniform,
                         "has_dynamic_offset": False,
-                        "min_binding_size": 16,  # GeometryParams size
+                        "min_binding_size": geometry.get_uniform_size(),
                     },
-                },
-                {
-                    "binding": 1,
-                    "visibility": wgpu.ShaderStage.VERTEX | wgpu.ShaderStage.FRAGMENT,
-                    "buffer": {
-                        "type": wgpu.BufferBindingType.uniform,
-                        "has_dynamic_offset": False,
-                        "min_binding_size": 48,  # TransformMatrix size
-                    },
-                },
+                }
             ]
         )
 
-        # Create bind group with separate buffers - FIXED: No offsets needed
+        # Create bind group with uniform buffer
         bind_group = device.create_bind_group(
             layout=bind_group_layout,
             entries=[
                 {
                     "binding": 0,
                     "resource": {
-                        "buffer": geometry_buffer,
+                        "buffer": uniform_buffer,
                         "offset": 0,
-                        "size": 16,  # Full geometry buffer
+                        "size": geometry.get_uniform_size(),
                     },
-                },
-                {
-                    "binding": 1,
-                    "resource": {
-                        "buffer": transform_buffer,
-                        "offset": 0,
-                        "size": 48,  # Full transform buffer
-                    },
-                },
+                }
             ],
         )
 
@@ -150,7 +120,7 @@ class Renderer:
         )
         device.queue.write_buffer(uniform_buffer, 0, uniform_data)
 
-        # Create bind group layout for uniforms - FIXED: Two bindings for geometry + transform
+        # Create bind group layout for uniforms
         bind_group_layout = device.create_bind_group_layout(
             entries=[
                 {
@@ -159,22 +129,13 @@ class Renderer:
                     "buffer": {
                         "type": wgpu.BufferBindingType.uniform,
                         "has_dynamic_offset": False,
-                        "min_binding_size": 16,  # GeometryParams size
+                        "min_binding_size": geometry.get_uniform_size(),
                     },
-                },
-                {
-                    "binding": 1,
-                    "visibility": wgpu.ShaderStage.VERTEX | wgpu.ShaderStage.FRAGMENT,
-                    "buffer": {
-                        "type": wgpu.BufferBindingType.uniform,
-                        "has_dynamic_offset": False,
-                        "min_binding_size": 48,  # TransformMatrix size
-                    },
-                },
+                }
             ]
         )
 
-        # Create bind group with uniform buffer - FIXED: Two bindings
+        # Create bind group with uniform buffer
         bind_group = device.create_bind_group(
             layout=bind_group_layout,
             entries=[
@@ -183,17 +144,9 @@ class Renderer:
                     "resource": {
                         "buffer": uniform_buffer,
                         "offset": 0,
-                        "size": 16,  # GeometryParams size
+                        "size": geometry.get_uniform_size(),
                     },
-                },
-                {
-                    "binding": 1,
-                    "resource": {
-                        "buffer": uniform_buffer,
-                        "offset": 16,  # Start after GeometryParams
-                        "size": 48,  # TransformMatrix size
-                    },
-                },
+                }
             ],
         )
 

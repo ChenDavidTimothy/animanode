@@ -35,27 +35,14 @@ class Scene:
             print("No geometries in scene")
             return
 
-        # FIXED: Render all geometries with proper multi-geometry support
-        print(f"Creating video with {len(self.geometries)} geometries...")
+        # For now, render first geometry (multi-geometry coming later)
+        geometry = self.geometries[0]
 
-        # For now, create separate videos for each geometry
-        # TODO: Multi-geometry rendering in single frame
-        if len(self.geometries) == 1:
-            self._render_single_geometry(self.geometries[0], filename)
-        else:
-            # Render each geometry separately for now
-            for i, geometry in enumerate(self.geometries):
-                base_name = filename.split(".")[0]
-                geo_filename = f"{base_name}_geometry_{i}.mp4"
-                self._render_single_geometry(geometry, geo_filename)
-            print(f"Created {len(self.geometries)} separate videos")
-
-    def _render_single_geometry(self, geometry, filename):
-        """Render single geometry with transforms applied"""
+        # Internal video creation - user doesn't see this complexity
         canvas = RenderCanvas(size=(640, 480))
         draw_frame = Renderer.setup_drawing_sync(canvas, geometry)
 
-        print(f"Rendering {geometry.__class__.__name__} with transforms...")
+        print("Creating video...")
 
         # Hidden complexity - user doesn't need to understand
         video_frames = []
