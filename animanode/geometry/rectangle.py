@@ -40,12 +40,12 @@ class Rectangle(ParametricGeometry):
 
     def _generate_shader(self) -> str:
         """
-        Generate WGSL shader with parametric rectangle mathematics
+        Generate WGSL shader with parametric rectangle mathematics AND transforms
 
         Mathematical approach:
         - Corner calculation: (±width/2, ±height/2)
         - Two triangles forming a quad
-        - Vertex color interpolation across corners
+        - Transform matrix applied to all vertices
         """
         return """
 struct GeometryParams {
@@ -55,8 +55,17 @@ struct GeometryParams {
     padding2: f32,
 };
 
+struct TransformMatrix {
+    m00: f32, m01: f32, m02: f32, pad0: f32,
+    m10: f32, m11: f32, m12: f32, pad1: f32,
+    m20: f32, m21: f32, m22: f32, pad2: f32,
+};
+
 @group(0) @binding(0)
 var<uniform> params: GeometryParams;
+
+@group(0) @binding(1)
+var<uniform> transform: TransformMatrix;
 
 struct VertexInput {
     @builtin(vertex_index) vertex_index : u32,
@@ -94,8 +103,16 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     );
 
     let index = i32(in.vertex_index);
+    let position = positions[index];
+
+    // FIXED: Apply transform matrix to position
+    let transformed_pos = vec2<f32>(
+        transform.m00 * position.x + transform.m01 * position.y + transform.m02,
+        transform.m10 * position.x + transform.m11 * position.y + transform.m12
+    );
+
     var out: VertexOutput;
-    out.pos = vec4<f32>(positions[index], 0.0, 1.0);
+    out.pos = vec4<f32>(transformed_pos, 0.0, 1.0);
     out.color = vec4<f32>(colors[index], 1.0);
     return out;
 }
@@ -110,13 +127,34 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     def _pack_uniform_data(self) -> bytes:
         """
-        Pack rectangle parameters into 16-byte aligned uniform buffer
-        Layout: [width: f32, height: f32, padding: f32, padding: f32]
+        Pack rectangle parameters AND transform matrix into uniform buffer
+        Layout: [GeometryParams (16 bytes), TransformMatrix (48 bytes)]
         """
-        return struct.pack(
+        # Pack geometry parameters (16 bytes)
+        geometry_data = struct.pack(
             "=ffff",  # Little-endian: 4 floats for 16-byte alignment
             self.parameters["width"],
             self.parameters["height"],
             0.0,  # padding for 16-byte alignment
             0.0,  # padding for 16-byte alignment
         )
+
+        # Pack transform matrix (48 bytes = 12 floats for 3x4 matrix layout)
+        transform_matrix = self.transform.get_matrix().to_list()
+        transform_data = struct.pack(
+            "=ffffffffffff",  # 12 floats total (3 rows * 4 floats per row)
+            transform_matrix[0],
+            transform_matrix[1],
+            transform_matrix[2],
+            0.0,  # Row 0 + padding
+            transform_matrix[3],
+            transform_matrix[4],
+            transform_matrix[5],
+            0.0,  # Row 1 + padding
+            transform_matrix[6],
+            transform_matrix[7],
+            transform_matrix[8],
+            0.0,  # Row 2 + padding
+        )
+
+        return geometry_data + transform_data

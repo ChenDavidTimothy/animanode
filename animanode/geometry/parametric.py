@@ -1,10 +1,13 @@
 """
 Parametric 2D geometry base class for AnimaNode
 Inspired by three directory's mathematical approach with radical simplicity for 2D
+Uses separate mathutils and transform modules following three directory structure
 """
 
 from abc import ABC, abstractmethod
 from typing import Any
+
+from ..transform import Transform2D
 
 
 class ParametricGeometry(ABC):
@@ -13,7 +16,7 @@ class ParametricGeometry(ABC):
     - Mathematical parameterization over hardcoding
     - Resolution control through parameters
     - Uniform buffer pattern for GPU parameters
-    - Architecture prepared for transform methods
+    - Uses separate mathutils and transform modules
     """
 
     def __init__(self, parameters: dict[str, Any]):
@@ -24,8 +27,8 @@ class ParametricGeometry(ABC):
             parameters: Dictionary of mathematical parameters (radius, width, segments, etc.)
         """
         self.parameters = parameters
-        # Transform state - architecture for future transform methods
-        self._transforms = {"translate": [0.0, 0.0], "rotate": 0.0, "scale": [1.0, 1.0]}
+        # Transform system - uses dedicated transform module
+        self.transform = Transform2D()
         self.vertex_count = self._calculate_vertex_count()
         self.shader_source = self._generate_shader()
         self._uniform_data = self._pack_uniform_data()
@@ -74,9 +77,9 @@ class ParametricGeometry(ABC):
         Get size of uniform buffer in bytes
 
         Returns:
-            Size in bytes (always 16-byte aligned)
+            Size in bytes - GeometryParams (16 bytes) + TransformMatrix (48 bytes) = 64 bytes total
         """
-        return len(self._uniform_data)
+        return 64  # Fixed size: 16 bytes for geometry + 48 bytes for transform matrix
 
     def update_parameter(self, name: str, value: Any) -> None:
         """
@@ -94,21 +97,23 @@ class ParametricGeometry(ABC):
         self.shader_source = self._generate_shader()
         self._uniform_data = self._pack_uniform_data()
 
-    # Transform methods - architecture prepared for future implementation
+    # Transform methods - uses dedicated transform module
     def translate(self, x: float, y: float):
-        """Transform method - to be implemented"""
-        # Architecture prepared - implementation coming later
-        raise NotImplementedError("Transform methods coming in future version")
+        """Apply translation transformation"""
+        self.transform.translate(x, y)
+        return self
 
     def rotate(self, angle: float):
-        """Transform method - to be implemented"""
-        # Architecture prepared - implementation coming later
-        raise NotImplementedError("Transform methods coming in future version")
+        """Apply rotation transformation (angle in radians)"""
+        self.transform.rotate(angle)
+        return self
 
     def scale(self, x: float, y: float = None):
-        """Transform method - to be implemented"""
-        # Architecture prepared - implementation coming later
-        raise NotImplementedError("Transform methods coming in future version")
+        """Apply scale transformation"""
+        if y is None:
+            y = x
+        self.transform.scale_by(x, y)
+        return self
 
 
 class GeometryParameters:
