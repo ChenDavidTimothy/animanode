@@ -1,99 +1,55 @@
 """
-Modular video generator for all AnimaNode geometries
+Radically simple video generator - user doesn't need programming knowledge
+No for loops, no complexity - just create shapes and call scene.draw()
 """
 
-from pathlib import Path
-
-import imageio.v3 as iio
-import numpy as np
-from rendercanvas.offscreen import RenderCanvas
-
-from animanode import Circle, Rectangle, Renderer, Triangle
-
-
-def create_video(
-    geometry_class,
-    output_path: str,
-    width: int = 1280,
-    height: int = 960,
-    fps: int = 60,
-    duration: float = 5.0,
-    quality: int = 9,
-) -> str:
-    """Create video for any geometry class"""
-
-    # Validate FFmpeg backend
-    try:
-        test_frame = [np.zeros((16, 16, 3), dtype=np.uint8)]
-        iio.imwrite("test.mp4", test_frame, fps=1)
-        Path("test.mp4").unlink(missing_ok=True)
-    except Exception as e:
-        raise RuntimeError(
-            f"FFmpeg not available. Install: pip install imageio[ffmpeg]. Error: {e}"
-        ) from e
-
-    # Setup rendering
-    total_frames = int(fps * duration)
-    canvas = RenderCanvas(size=(width, height))
-    draw_frame = Renderer.setup_drawing_sync(canvas, geometry_class)
-
-    print(f"Rendering {total_frames} frames of {geometry_class.__name__} at {width}x{height}...")
-
-    # Render frames
-    frames = []
-    for i in range(total_frames):
-        canvas.request_draw(draw_frame)
-        frame = np.asarray(canvas.draw())
-
-        # Convert to RGB uint8
-        if frame.shape[2] == 4:  # RGBA -> RGB
-            frame = frame[:, :, :3]
-        if frame.dtype != np.uint8:
-            frame = np.clip(frame, 0, 1) if frame.dtype.kind == "f" else frame
-            frame = (
-                (frame * 255).astype(np.uint8)
-                if frame.dtype.kind == "f"
-                else frame.astype(np.uint8)
-            )
-
-        frames.append(frame)
-
-        if (i + 1) % (total_frames // 10) == 0:
-            print(f"Progress: {i + 1}/{total_frames}")
-
-    # Write video
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    print(f"Encoding video: {output_path}")
-
-    iio.imwrite(
-        output_path, frames, fps=fps, codec="libx264", quality=quality, pixelformat="yuv420p"
-    )
-
-    file_size = Path(output_path).stat().st_size / (1024 * 1024)
-    print(f"Video saved: {output_path} ({file_size:.1f}MB)")
-
-    return output_path
+from animanode import Circle, Rectangle, Scene, Triangle
 
 
 def main():
-    """Generate videos for all geometries"""
-    geometries = [
-        (Triangle, "triangle.mp4"),
-        (Circle, "circle.mp4"),
-        (Rectangle, "rectangle.mp4"),
-    ]
+    """User-friendly approach - no programming complexity visible"""
 
-    for geometry_class, filename in geometries:
-        create_video(
-            geometry_class=geometry_class,
-            output_path=filename,
-            width=1280,
-            height=960,
-            fps=60,
-            duration=5.0,
-            quality=9,
-        )
+    # Create parametric geometries
+    circle = Circle(radius=0.6, segments=32)
+    rect = Rectangle(width=0.8, height=0.6)
+    triangle = Triangle(size=0.9, rotation=0.0)
+
+    # Simple scene approach - user doesn't see video creation complexity
+    scene1 = Scene()
+    scene1.add(circle)
+    scene1.draw("circle.mp4")
+
+    scene2 = Scene()
+    scene2.add(rect)
+    scene2.draw("rectangle.mp4")
+
+    scene3 = Scene()
+    scene3.add(triangle)
+    scene3.draw("triangle.mp4")
+
+
+def future_vision_example():
+    """This is your future vision - architecture prepared"""
+
+    # This will work in future version:
+    # scene = Scene()
+    # meshList = []
+    #
+    # rect = Rectangle(width=0.8, height=0.6)
+    # rect.translate(0.2, 0.1)  # Architecture prepared
+    # rect.rotate(0.5)          # Architecture prepared
+    # meshList.append(rect)
+    #
+    # circle = Circle(radius=0.5)
+    # circle.scale(1.5, 1.5)    # Architecture prepared
+    # meshList.append(circle)
+    #
+    # scene.add(meshList)
+    # scene.draw()              # Automatically creates video
+
+    print("Transform methods architecture prepared for future implementation")
 
 
 if __name__ == "__main__":
     main()
+    future_vision_example()
